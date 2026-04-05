@@ -165,3 +165,8 @@ dist
 .env*
 !.env.example
 .wrangler/
+
+# Configuration files with sensitive data
+config.json
+config.local.json
+*.secret.json

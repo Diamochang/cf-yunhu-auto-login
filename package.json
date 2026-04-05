@@ -1,11 +1,27 @@
 {
   "name": "cf-yunhu-auto-login",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.5.0",
+  "description": "Cloudflare Worker for auto login to Yunhu Chat",
+  "author": "Diamochang (Mike Wang) <diamochang@yeah.net>",
+  "license": "AGPLv3+",
+  "keywords": [
+    "node",
+    "javascript",
+    "npm",
+    "cloudflare",
+    "worker",
+    "yunhu",
+    "auto-login"
+  ],
+  "private": false,
+  "homepage": "https://github.com/Diamochang/cf-yunhu-auto-login#readme",
+  "bugs": {
+    "url": "https://github.com/Diamochang/cf-yunhu-auto-login/issues"
+  },
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev --test-scheduled",
-    "start": "wrangler dev --test-scheduled"
+    "deploy": "npx wrangler deploy",
+    "dev": "npx wrangler dev --test-scheduled",
+    "start": "npx wrangler dev --test-scheduled"
   },
   "devDependencies": {
     "wrangler": "^4.80.0"

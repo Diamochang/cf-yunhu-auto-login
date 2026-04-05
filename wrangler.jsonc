@@ -12,13 +12,13 @@
 	},
 	"triggers": {
 		"crons": [
-			"* * * * *"
+			"0 */2 * * *"
 		]
 	},
 	"upload_source_maps": true,
 	"compatibility_flags": [
 		"nodejs_compat"
-	]
+	],
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -36,7 +36,14 @@
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
 	 */
-	// "vars": {  "MY_VARIABLE": "production_value" }
+	// 账号配置 (JSON 数组格式)
+	// 示例: [{"userId":"user1","token":"token1","platform":"windows"},{"userId":"user2","token":"token2","platform":"android"}]
+	// platform 可选值: windows, android, ios, macos, Web, linux, fuchsia
+	// deviceId 可选，留空则自动生成
+	"vars": {
+		"ACCOUNT_CONFIGS": "[]",
+		"WEBSOCKET_URL": "wss://chat-ws-go.jwzhd.com/ws"
+	},
 	/**
 	 * Static Assets
 	 * https://developers.cloudflare.com/workers/static-assets/binding/

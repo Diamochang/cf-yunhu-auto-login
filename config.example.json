@@ -1,0 +1,40 @@
+{
+  "ACCOUNT_CONFIGS_EXAMPLE": [
+    {
+      "userId": "your_user_id_1",
+      "token": "your_token_1",
+      "platform": "windows"
+    },
+    {
+      "userId": "your_user_id_2",
+      "token": "your_token_2",
+      "platform": "android",
+      "deviceId": "custom_device_id_here"
+    },
+    {
+      "userId": "your_user_id_3",
+      "token": "your_token_3",
+      "platform": "ios"
+    }
+  ],
+  "WEBSOCKET_URL": "wss://chat-ws-go.jwzhd.com/ws",
+  "INSTRUCTIONS": {
+    "note": "此文件仅作为示例，不要直接部署！",
+    "steps": [
+      "1. 复制 ACCOUNT_CONFIGS_EXAMPLE 的内容",
+      "2. 替换为你的真实 userId 和 token",
+      "3. 使用以下命令设置秘密变量：",
+      "   npx wrangler secret put ACCOUNT_CONFIGS",
+      "4. 粘贴修改后的 JSON 数组（不包含键名，只粘贴数组部分）"
+    ],
+    "platform_options": [
+      "windows",
+      "android",
+      "ios",
+      "Macos",
+      "Web",
+      "Linux",
+      "HamonyOS"
+    ]
+  }
+}
