@@ -1,12 +1,12 @@
-# 云呼自动登录 - Cloudflare Workers 定时任务
+# 云湖自动登录 Cloudflare Workers 版
 
-这是一个基于 Cloudflare Workers 的定时自动登录服务，用于定期向云呼 WebSocket 服务器发送登录请求以保持账号在线状态。
+这是一个基于 Cloudflare Workers 的云湖定时自动登录脚本，用于定期向云湖 WebSocket 服务器发送登录请求以保持账号连续在线状态。
 
 ## 功能特性
 
 - ✅ 支持多账号配置
-- ✅ 定时自动执行（默认每30分钟）
-- ✅ 自动生成设备ID
+- ✅ 定时自动执行（默认每 2 小时）
+- ✅ 自动生成设备 ID
 - ✅ 支持多种平台类型（Windows、Android、iOS、MacOS、Web、Linux、HarmonyOS）
 - ✅ 详细的日志输出
 - ✅ 错误处理和重试机制
@@ -37,11 +37,11 @@
 ```
 
 **参数说明：**
-- `userId`: 用户ID（必填）
-- `token`: 用户Token（必填）
-- `platform`: 平台类型（可选，默认: windows）
-  - 可选值: `windows`, `android`, `ios`, `Macos`, `Web`, `Linux`, `HamonyOS`
-- `deviceId`: 设备ID（可选，留空则自动生成50位随机字符串）
+- `userId`: 用户 ID（必填，不是用户名、邮箱和手机号）
+- `token`: 用户 Token（必填，可以在云湖手机 APP“我”→“进入官网控制台”或“进入云湖官网”通过查看跳转链接的 GET 参数获得）
+- `platform`: 平台类型（必填，默认: linux）
+  - 可选值: `windows`, `android`, `ios`, `macos`, `Web`, `linux`, `fuchsia`
+- `deviceId`: 设备ID（可选，留空则自动生成随机字符串）
 
 #### WEBSOCKET_URL（可选）
 WebSocket 服务器地址，默认为: `wss://chat-ws-go.jwzhd.com/ws`
@@ -65,7 +65,7 @@ WebSocket 服务器地址，默认为: `wss://chat-ws-go.jwzhd.com/ws`
 - `0 */6 * * *` - 每6小时执行
 - `0 0 * * *` - 每天午夜执行
 
-Cron 表达式使用 UTC 时间。
+Cron 表达式使用 UTC 时间，但是在查看跟踪事件时 Cloudflare 会使用账号设定的时区显示事件发生时间。
 
 ## 部署步骤
 
@@ -82,13 +82,9 @@ Cron 表达式使用 UTC 时间。
    
    方式 B：使用 Wrangler 命令设置（更安全，推荐用于生产环境）
    ```bash
-   # 设置账号配置
+   # 设置账号配置（0.5.0 设置 Secret 可能没有作用，如果失败直接使用环境变量，后续版本会迁移）
    npx wrangler secret put ACCOUNT_CONFIGS
    # 粘贴 JSON 格式的账号配置
-   
-   # 设置 WebSocket URL（可选）
-   npx wrangler secret put WEBSOCKET_URL
-   # 输入 WebSocket 服务器地址
    ```
 
 3. **本地测试**
@@ -123,7 +119,7 @@ npx wrangler tail
 
 ### Dashboard 查看
 1. 进入 Worker 页面
-2. 点击 Logs 标签
+2. 点击 Observability 标签
 3. 查看历史执行记录
 
 日志会显示：
@@ -133,19 +129,13 @@ npx wrangler tail
 
 ## 技术实现
 
-### WebSocket 连接
-由于 Cloudflare Workers 不能直接作为 WebSocket 客户端连接外部服务器，本项目使用 TCP Sockets API (`cloudflare:sockets`) 手动实现 WebSocket 协议：
+Cloudflare Workers 可以直接作为 WebSocket 客户端连接外部服务器，因此项目直接使用 WebSocket 类完成连接：
 
-1. 建立 TCP/TLS 连接
+1. 建立 WebSocket 连接
 2. 发送 WebSocket 握手请求
 3. 验证握手响应（HTTP 101）
 4. 发送 WebSocket 帧（包含登录数据）
 5. 关闭连接
-
-### 安全考虑
-- Token 等敏感信息应使用 `wrangler secret put` 存储，而非明文写在配置文件中
-- 定时触发器无需访问密钥验证，因为只有 Cloudflare 内部可以触发
-- 所有连接使用 TLS 加密（wss://）
 
 ## 故障排查
 
@@ -163,7 +153,7 @@ npx wrangler tail
 3. **定时任务未执行**
    - 检查 Cron 表达式是否正确
    - 确认 Worker 已成功部署
-   - 在 Dashboard 中查看 Cron Events
+   - 在 Dashboard 中查看 Observability 事件
 
 ### 调试技巧
 
@@ -175,17 +165,10 @@ curl "http://localhost:8787/cdn-cgi/handler/scheduled?cron=*/5+*+*+*+*"
 npx wrangler tail --format pretty
 ```
 
-## 限制和注意事项
+## 参考项目
 
-- Cloudflare Workers 免费套餐：每天最多 100,000 次请求
-- 每个 Worker 执行时间限制：10ms（免费）/ 30s（付费）
-- 同时打开的 TCP 连接数有限制
-- Cron 触发器变更可能需要几分钟才能生效
+云湖用户“无聊的小知识”（ID：8264925）使用 PHP 编写的[自动登录程序](https://github.com/QianLin-Jiaxi/Yhchat-Auto-Login)。本项目作者亦对其做了安全性方面的贡献。
 
 ## 许可证
 
-MIT
-
-## 更新日志
-
-- 2026-04-06: 初始版本，从 PHP 代码迁移到 Cloudflare Workers
+[GNU Affero 通用公共许可证第三版](LICENSE)或任何以后版本。
