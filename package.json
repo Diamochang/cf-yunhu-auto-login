@@ -1,6 +1,5 @@
 {
   "name": "cf-yunhu-auto-login",
-  "version": "0.5.0",
   "description": "Cloudflare Worker for auto login to Yunhu Chat",
   "author": "Diamochang (Mike Wang) <diamochang@yeah.net>",
   "license": "AGPLv3+",
