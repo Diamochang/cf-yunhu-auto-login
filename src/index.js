@@ -12,8 +12,6 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-import { connect } from 'cloudflare:sockets';
-
 /**
  * 生成随机字符串
  * @param {number} length - 字符串长度
@@ -43,88 +41,18 @@ function uuid4NoDash() {
 }
 
 /**
- * WebSocket 帧编码
- * @param {string} payload - 要发送的文本数据
- * @returns {Uint8Array} WebSocket 帧
- */
-function encodeWebSocketFrame(payload) {
-	const encoder = new TextEncoder();
-	const payloadBytes = encoder.encode(payload);
-	const payloadLen = payloadBytes.length;
-
-	// FIN bit + opcode (text frame = 0x01)
-	const finAndOpcode = 0x81;
-
-	let frame;
-	if (payloadLen <= 125) {
-		frame = new Uint8Array(2 + payloadLen);
-		frame[0] = finAndOpcode;
-		frame[1] = payloadLen;
-		frame.set(payloadBytes, 2);
-	} else if (payloadLen <= 65535) {
-		frame = new Uint8Array(4 + payloadLen);
-		frame[0] = finAndOpcode;
-		frame[1] = 126;
-		frame[2] = (payloadLen >> 8) & 0xff;
-		frame[3] = payloadLen & 0xff;
-		frame.set(payloadBytes, 4);
-	} else {
-		frame = new Uint8Array(10 + payloadLen);
-		frame[0] = finAndOpcode;
-		frame[1] = 127;
-		// 大端序写入 8 字节长度
-		const view = new DataView(frame.buffer);
-		view.setUint32(2, 0, false);
-		view.setUint32(6, payloadLen, false);
-		frame.set(payloadBytes, 10);
-	}
-
-	return frame;
-}
-
-/**
- * 创建 WebSocket 握手请求头
- * @param {string} path - WebSocket 路径
- * @param {string} host - 主机名
- * @returns {string} HTTP 请求头
- */
-function createWebSocketHandshake(path, host) {
-	const key = btoa(
-		Array.from(crypto.getRandomValues(new Uint8Array(16)))
-			.map(b => String.fromCharCode(b))
-			.join('')
-	);
-
-	return (
-		`GET ${path} HTTP/1.1\r\n` +
-		`Host: ${host}\r\n` +
-		`Upgrade: websocket\r\n` +
-		`Connection: Upgrade\r\n` +
-		`Sec-WebSocket-Key: ${key}\r\n` +
-		`Sec-WebSocket-Version: 13\r\n` +
-		`\r\n`
-	);
-}
-
-/**
  * 执行单个账号的登录操作
  * @param {Object} config - 账号配置
  * @param {string} targetUrl - WebSocket 服务器地址
  * @returns {Promise<Object>} 登录结果
  */
 async function performLogin(config, targetUrl) {
-	const result = {
-		userId: config.userId,
-		success: false,
-		error: null
-	};
-
-	try {
-		// 解析 WebSocket URL
-		const url = new URL(targetUrl);
-		const hostname = url.hostname;
-		const port = url.protocol === 'wss:' ? 443 : 80;
-		const path = url.pathname + url.search;
+	return new Promise((resolve) => {
+		const result = {
+			userId: config.userId,
+			success: false,
+			error: null
+		};
 
 		// 如果没有提供 deviceId，则自动生成
 		const deviceId = config.deviceId || randomString(50);
@@ -142,67 +70,66 @@ async function performLogin(config, targetUrl) {
 		};
 
 		const jsonPayload = JSON.stringify(loginData);
+		let ws = null;
+		let timeoutId = null;
 
-		console.log(`🔌 正在连接到: ${hostname}:${port} (协议: ${url.protocol})`);
-		console.log(`📍 路径: ${path}`);
+		const cleanup = () => {
+			if (timeoutId) clearTimeout(timeoutId);
+			if (ws && ws.readyState === WebSocket.OPEN) {
+				ws.close();
+			}
+		};
 
-		// 连接到 WebSocket 服务器
-		let socket;
+		// 设置超时
+		timeoutId = setTimeout(() => {
+			console.error(`❌ 用户 ${config.userId} 登录超时`);
+			result.error = '连接超时';
+			cleanup();
+			resolve(result);
+		}, 10000);
+
 		try {
-			socket = connect(
-				{ hostname, port },
-				{ secureTransport: url.protocol === 'wss:' ? 'on' : 'off' }
-			);
-		} catch (connectError) {
-			throw new Error(`TCP 连接失败: ${connectError.message}. 请检查域名和端口是否正确。`);
+			ws = new WebSocket(targetUrl);
+
+			ws.onopen = () => {
+				console.log(`✅ WebSocket 连接已建立 (${config.userId})`);
+				// 发送登录数据
+				ws.send(jsonPayload);
+				// 短暂延迟确保消息发送完成，然后关闭连接
+				setTimeout(() => {
+					if (ws && ws.readyState === WebSocket.OPEN) {
+						ws.close();
+					}
+					result.success = true;
+					console.log(`✅ 用户 ${config.userId} 登录成功`);
+					cleanup();
+					resolve(result);
+				}, 500);
+			};
+
+			ws.onerror = (err) => {
+				console.error(`❌ 用户 ${config.userId} WebSocket 错误:`, err);
+				result.error = 'WebSocket 错误';
+				cleanup();
+				resolve(result);
+			};
+
+			ws.onclose = (event) => {
+				// 正常关闭时不重复 resolve，避免重复调用
+				if (result.success === false && result.error === null) {
+					console.log(`用户 ${config.userId} WebSocket 意外关闭: code=${event.code}, reason=${event.reason}`);
+					result.error = `连接关闭 (${event.code})`;
+					cleanup();
+					resolve(result);
+				}
+			};
+		} catch (error) {
+			console.error(`❌ 用户 ${config.userId} 创建 WebSocket 失败:`, error.message);
+			result.error = error.message;
+			cleanup();
+			resolve(result);
 		}
-
-		// 等待连接建立
-		try {
-			await socket.opened;
-			console.log('✅ TCP 连接已建立');
-		} catch (openError) {
-			socket.close();
-			throw new Error(`连接打开失败: ${openError.message}. 可能是域名被阻止或网络不可达。`);
-		}
-
-		// 获取 writer
-		const writer = socket.writable.getWriter();
-		const encoder = new TextEncoder();
-
-		// 发送 WebSocket 握手请求
-		const handshake = createWebSocketHandshake(path, hostname);
-		await writer.write(encoder.encode(handshake));
-
-		// 读取握手响应
-		const reader = socket.readable.getReader();
-		const handshakeResponse = await reader.read();
-		const responseText = new TextDecoder().decode(handshakeResponse.value);
-
-		// 检查握手是否成功 (HTTP 101 Switching Protocols)
-		if (!responseText.startsWith('HTTP/1.1 101')) {
-			throw new Error(`握手失败: ${responseText.substring(0, 100)}`);
-		}
-
-		// 发送登录数据 (WebSocket 帧)
-		const webSocketFrame = encodeWebSocketFrame(jsonPayload);
-		await writer.write(webSocketFrame);
-
-		// 短暂延迟确保数据发送完成
-		await new Promise(resolve => setTimeout(resolve, 100));
-
-		// 关闭连接
-		await writer.close();
-		socket.close();
-
-		result.success = true;
-		console.log(`✅ 用户 ${config.userId} 登录成功`);
-	} catch (error) {
-		result.error = error.message;
-		console.error(`❌ 用户 ${config.userId} 登录失败:`, error.message);
-	}
-
-	return result;
+	});
 }
 
 export default {
