@@ -170,3 +170,7 @@ dist
 config.json
 config.local.json
 *.secret.json
+
+# Wrangler configuration (keep example file)
+wrangler.jsonc
+!wrangler.example.jsonc

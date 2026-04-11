@@ -6,13 +6,13 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "cf-yunhu-auto-login",
 	"main": "src/index.js",
-	"compatibility_date": "2026-04-05",
+	"compatibility_date": "2026-04-11",
 	"observability": {
 		"enabled": true
 	},
 	"triggers": {
 		"crons": [
-			"0 */2 * * *"
+			"0 */4 * * *"
 		]
 	},
 	"upload_source_maps": true,
