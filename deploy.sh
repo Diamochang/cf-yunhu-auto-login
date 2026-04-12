@@ -1,12 +1,9 @@
 #!/bin/bash
 
-# 云呼自动登录 - 快速部署脚本
-# 此脚本帮助你快速配置和部署 Worker
-
 set -e
 
 echo "======================================"
-echo "  云呼自动登录 - 快速部署向导"
+echo "  云湖自动登录 - 快速部署向导"
 echo "======================================"
 echo ""
 
@@ -174,6 +171,17 @@ echo "账号配置: $ACCOUNT_CONFIGS"
 echo "WebSocket URL: $websocket_url"
 echo "Cron 表达式: $CRONExpression"
 echo ""
+
+# 当使用 Secrets 存储时，提示不可直接修改
+if [ "$USE_VARS" = false ]; then
+    echo "⚠️  注意：您选择了使用 Secrets 存储账号信息。"
+    echo "   Secrets 一旦设置后不能直接修改，只能删除后重新创建变量。"
+    echo "   如需修改账号配置，请先执行以下命令删除现有 Secret："
+    echo "     npx wrangler secret delete ACCOUNT_CONFIGS"
+    echo "   然后重新运行本脚本或使用 'npx wrangler secret put ACCOUNT_CONFIGS' 设置新值。"
+    echo ""
+fi
+
 read -p "确认部署？(y/n): " confirm
 
 if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then

@@ -59,7 +59,7 @@ if ($env:CLOUDFLARE_API_TOKEN -and $env:CLOUDFLARE_ACCOUNT_ID) {
 Write-Host ""
 
 # 获取账号配置
-Write-Host "[INFO] 配置账号信息" -ForegroundColor Yellow
+Write-Host "配置账号信息" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "请输入账号配置（JSON 数组格式）" -ForegroundColor White
 Write-Host "示例：" -ForegroundColor White
@@ -115,7 +115,7 @@ if ($ACCOUNT_CONFIGS -ne "[]" -and $ACCOUNT_CONFIGS -ne "") {
 }
 
 # 获取 WebSocket URL
-Write-Host "[INFO] 配置 WebSocket 服务器地址" -ForegroundColor Yellow
+Write-Host "配置 WebSocket 服务器地址" -ForegroundColor Yellow
 $websocket_url = Read-Host "WebSocket URL (默认: wss://chat-ws-go.jwzhd.com/ws)"
 if ([string]::IsNullOrWhiteSpace($websocket_url)) {
     $websocket_url = "wss://chat-ws-go.jwzhd.com/ws"
@@ -123,7 +123,7 @@ if ([string]::IsNullOrWhiteSpace($websocket_url)) {
 Write-Host ""
 
 # 选择配置方式（环境变量或 Secrets）
-Write-Host "[INFO] 选择配置存储方式" -ForegroundColor Yellow
+Write-Host "选择配置存储方式" -ForegroundColor Yellow
 Write-Host "  1. 使用环境变量 (vars) - 配置保存在 wrangler.jsonc 中" -ForegroundColor White
 Write-Host "  2. 使用 Secrets - 配置加密存储在 Cloudflare，更安全" -ForegroundColor White
 Write-Host ""
@@ -145,7 +145,7 @@ if ($storage_choice -eq "1") {
 Write-Host ""
 
 # 获取 Cron 表达式
-Write-Host "[INFO] 配置定时触发器" -ForegroundColor Yellow
+Write-Host "配置定时触发器" -ForegroundColor Yellow
 Write-Host "常用选项：" -ForegroundColor White
 Write-Host "  1. 每30分钟 (*/30 * * * *)" -ForegroundColor White
 Write-Host "  2. 每小时 (0 * * * *)" -ForegroundColor White
@@ -170,10 +170,20 @@ Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host "  配置汇总" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "账号配置: $ACCOUNT_CONFIGS" -ForegroundColor White
-Write-Host "WebSocket URL: $websocket_url" -ForegroundColor White
-Write-Host "Cron 表达式: $CRONExpression" -ForegroundColor White
+Write-Host " 账号配置: $ACCOUNT_CONFIGS" -ForegroundColor White
+Write-Host " WebSocket URL: $websocket_url" -ForegroundColor White
+Write-Host " Cron 表达式: $CRONExpression" -ForegroundColor White
 Write-Host ""
+
+# 当使用 Secrets 存储时，提示不可直接修改
+if (-not $USE_VARS) {
+    Write-Host " 注意：您选择了使用 Secrets 存储账号信息。" -ForegroundColor Yellow
+    Write-Host "   Secrets 一旦设置后不能直接修改，只能删除后重新创建变量。" -ForegroundColor Yellow
+    Write-Host "   如需修改账号配置，请先执行以下命令删除现有 Secret：" -ForegroundColor Yellow
+    Write-Host "     npx wrangler secret delete ACCOUNT_CONFIGS" -ForegroundColor White
+    Write-Host "   然后重新运行本脚本或使用 'npx wrangler secret put ACCOUNT_CONFIGS' 设置新值。" -ForegroundColor Yellow
+    Write-Host ""
+}
 
 $confirm = Read-Host "确认部署？(y/n)"
 
@@ -305,17 +315,17 @@ npm run deploy
 
 Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "  [OK] 部署成功！" -ForegroundColor Green
+Write-Host "  部署成功！" -ForegroundColor Green
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "[INFO] 查看日志:" -ForegroundColor Yellow
+Write-Host " 查看日志:" -ForegroundColor Yellow
 Write-Host "   npx wrangler tail" -ForegroundColor White
 Write-Host ""
-Write-Host "[INFO] 修改配置:" -ForegroundColor Yellow
+Write-Host " 修改配置:" -ForegroundColor Yellow
 Write-Host "   npx wrangler secret put ACCOUNT_CONFIGS" -ForegroundColor White
 Write-Host "   npx wrangler secret put WEBSOCKET_URL" -ForegroundColor White
 Write-Host ""
-Write-Host "[INFO] 更多信息请查看 README.md" -ForegroundColor Yellow
+Write-Host " 更多信息请查看 README.md" -ForegroundColor Yellow
 Write-Host ""
 
 Read-Host "按回车键退出"
