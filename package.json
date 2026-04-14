@@ -2,7 +2,7 @@
   "name": "cf-yunhu-auto-login",
   "description": "Cloudflare Worker for auto login to Yunhu Chat",
   "author": "Diamochang (Mike Wang) <diamochang@yeah.net>",
-  "license": "AGPLv3+",
+  "license": "AGPL-3.0-or-later",
   "keywords": [
     "node",
     "javascript",
